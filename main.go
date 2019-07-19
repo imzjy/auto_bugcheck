@@ -16,8 +16,7 @@ import (
 
 const cdbPath string = `C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\cdb.exe`
 const cdbCommand string = "!analyze -v;q"
-const exactRegex = "^BUGCHECK_STR"
-const version = "v0.0.3"
+const version = "v0.0.3c"
 
 const ok = 0
 const dmpNotFound = 1
@@ -35,8 +34,10 @@ func main() {
 	flag.StringVar(&cdb, "p", cdbPath, "cdb file path")
 	flag.StringVar(&dump, "f", "", "analyze specific dump file, ignore -d if flag set")
 	flag.StringVar(&cdbCmd, "c", cdbCommand, "command issued tocdb debugger")
-	flag.StringVar(&regPattern, "regex", exactRegex, "regular express to exact from cdb output")
+	flag.StringVar(&regPattern, "regex", "", "regular express to exact from cdb output")
 	ver := flag.Bool("version", false, "print version")
+	rawOutput := flag.Bool("raw", false, "raw cdb output")
+
 	flag.Parse()
 
 	if *ver {
@@ -57,7 +58,7 @@ func main() {
 
 	//specific dump analyze
 	if FileExist(dump) {
-		prettyPrintMatched(dump, analyze(cdb, dump, cdbCmd, regPattern))
+		prettyPrintMatched(dump, analyze(cdb, dump, cdbCmd, regPattern, *rawOutput))
 		os.Exit(ok)
 	}
 
@@ -66,7 +67,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "log folder not found.\n\tat location: %s", logFolder)
 		os.Exit(dmpNotFound)
 	}
-	processDumpFolder(logFolder, cdb, cdbCmd, regPattern)
+	processDumpFolder(logFolder, cdb, cdbCmd, regPattern, *rawOutput)
 
 }
 
@@ -79,26 +80,41 @@ func executeCdb(cdb string, dmpFile string, cdbCmd string) ([]byte, error) {
 	return output, err
 }
 
-func analyze(cdb string, dmpFile string, cdbCmd string, regPattern string) string {
+func analyze(cdb string, dmpFile string, cdbCmd string, regPattern string, rawOutput bool) string {
 	output, err := executeCdb(cdb, dmpFile, cdbCmd)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 
-	scanner := bufio.NewScanner(strings.NewReader(string(output)))
+	outputStr := string(output)
+
+	if rawOutput {
+		return outputStr
+	}
+
+	scanner := bufio.NewScanner(strings.NewReader(outputStr))
 	for scanner.Scan() {
 
 		line := scanner.Text()
-		matched, err := regexp.MatchString(regPattern, line)
 
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "regex syntax error: %s", err.Error())
-			return "ERROR"
+		if regPattern == "" {
+			if strings.Contains(line, "BUGCHECK_STR") {
+				return line
+			}
+		} else {
+			// regex exact
+			matched, err := regexp.MatchString(regPattern, line)
+
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "regex syntax error: %s", err.Error())
+				return "ERROR"
+			}
+
+			if matched {
+				return line
+			}
 		}
 
-		if matched {
-			return line
-		}
 	}
 
 	return "NOT FOUND"
@@ -113,7 +129,7 @@ func prettyPrintMatched(dumpFile string, matchedStr string) {
 	fmt.Printf("%s\n\t%s\n\n", dumpFullPath, matchedStr)
 }
 
-func processDumpFolder(logFolder string, cdb string, cdbCmd string, regPattern string) {
+func processDumpFolder(logFolder string, cdb string, cdbCmd string, regPattern string, rawOutput bool) {
 
 	files, err := ioutil.ReadDir(logFolder)
 	if err != nil {
@@ -123,7 +139,7 @@ func processDumpFolder(logFolder string, cdb string, cdbCmd string, regPattern s
 	for _, file := range files {
 		if strings.ToLower(filepath.Ext(file.Name())) == ".dmp" {
 			dumpFile := path.Join(logFolder, file.Name())
-			prettyPrintMatched(dumpFile, analyze(cdb, dumpFile, cdbCmd, regPattern))
+			prettyPrintMatched(dumpFile, analyze(cdb, dumpFile, cdbCmd, regPattern, rawOutput))
 		}
 	}
 }
