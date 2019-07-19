@@ -22,7 +22,7 @@ func main() {
 	var dump string
 	flag.StringVar(&logFolder, "d", "", "log folder contains DMP files")
 	flag.StringVar(&cdb, "p", cdbPath, "cdb file path")
-	flag.StringVar(&dump, "f", "", "get bug check for specific dump file, ignore -d if flag set")
+	flag.StringVar(&dump, "f", "", "analyze specific dump file, ignore -d if flag set")
 	flag.Parse()
 
 	if (logFolder == "" && dump == "") || cdb == "" {
