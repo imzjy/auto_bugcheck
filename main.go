@@ -14,39 +14,51 @@ import (
 )
 
 const cdbPath string = `C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\cdb.exe`
+const version = "0.0.1"
+
+const ok = 0
+const dmpNotFound = 1
+const cdbNotFound = 2
 
 func main() {
 
 	var logFolder string
 	var cdb string
 	var dump string
+
 	flag.StringVar(&logFolder, "d", "", "log folder contains DMP files")
 	flag.StringVar(&cdb, "p", cdbPath, "cdb file path")
 	flag.StringVar(&dump, "f", "", "analyze specific dump file, ignore -d if flag set")
+	ver := flag.Bool("version", false, "print version")
 	flag.Parse()
 
-	if (logFolder == "" && dump == "") || cdb == "" {
-		fmt.Fprintf(os.Stderr, "usage of %s:\n", os.Args[0])
-		flag.PrintDefaults()
-		return
+	if *ver {
+		printVersion()
+		os.Exit(ok)
 	}
 
-	if fileNotExist(cdb) {
+	if (logFolder == "" && dump == "") || cdb == "" {
+		fmt.Fprintf(os.Stderr, "usage of %s\n", os.Args[0])
+		flag.PrintDefaults()
+		os.Exit(dmpNotFound)
+	}
+
+	if !FileExist(cdb) {
 		fmt.Fprintf(os.Stderr, "cdb not found.\n\tat location: %s", cdb)
-		return
+		os.Exit(cdbNotFound)
 	}
 
 	//specific dump analyze
-	if !fileNotExist(dump) {
+	if FileExist(dump) {
 		bugCheck := getBugCheckStr(cdb, dump)
 		fmt.Printf("%s\n\t%s\n\n", dump, bugCheck)
-		return
+		os.Exit(ok)
 	}
 
 	//get bugcheck str for all dump files in folder
-	if fileNotExist(logFolder) {
+	if !FileExist(logFolder) {
 		fmt.Fprintf(os.Stderr, "log folder not found.\n\tat location: %s", logFolder)
-		return
+		os.Exit(dmpNotFound)
 	}
 
 	files, err := ioutil.ReadDir(logFolder)
@@ -61,6 +73,10 @@ func main() {
 			fmt.Printf("%s\n\t%s\n\n", dmpFile, bugCheck)
 		}
 	}
+}
+
+func printVersion() {
+	fmt.Println(version)
 }
 
 func getBugCheckStr(cdb string, dmpFile string) string {
@@ -78,9 +94,4 @@ func getBugCheckStr(cdb string, dmpFile string) string {
 	}
 
 	return "NOT FOUND"
-}
-
-func fileNotExist(filePath string) bool {
-	_, err := os.Stat(filePath)
-	return os.IsNotExist(err)
 }
