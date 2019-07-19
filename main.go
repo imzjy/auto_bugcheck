@@ -19,11 +19,13 @@ func main() {
 
 	var logFolder string
 	var cdb string
+	var dump string
 	flag.StringVar(&logFolder, "d", "", "log folder contains DMP files")
 	flag.StringVar(&cdb, "p", cdbPath, "cdb file path")
+	flag.StringVar(&dump, "f", "", "get bug check for specific dump file, ignore -d if flag set")
 	flag.Parse()
 
-	if logFolder == "" || cdb == "" {
+	if (logFolder == "" && dump == "") || cdb == "" {
 		fmt.Fprintf(os.Stderr, "usage of %s:\n", os.Args[0])
 		flag.PrintDefaults()
 		return
@@ -34,6 +36,14 @@ func main() {
 		return
 	}
 
+	//specific dump analyze
+	if !fileNotExist(dump) {
+		bugCheck := getBugCheckStr(cdb, dump)
+		fmt.Printf("%s\n\t%s\n\n", dump, bugCheck)
+		return
+	}
+
+	//get bugcheck str for all dump files in folder
 	if fileNotExist(logFolder) {
 		fmt.Fprintf(os.Stderr, "log folder not found.\n\tat location: %s", logFolder)
 		return
