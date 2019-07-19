@@ -31,7 +31,7 @@ func main() {
 	var cdbCmd string
 	var regPattern string
 
-	flag.StringVar(&logFolder, "d", "", "log folder contains DMP files")
+	flag.StringVar(&logFolder, "d", "", "folder contains DMP files")
 	flag.StringVar(&cdb, "p", cdbPath, "cdb file path")
 	flag.StringVar(&dump, "f", "", "analyze specific dump file, ignore -d if flag set")
 	flag.StringVar(&cdbCmd, "c", cdbCommand, "command issued tocdb debugger")
