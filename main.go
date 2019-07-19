@@ -67,7 +67,7 @@ func getBugCheckStr(cdb string, dmpFile string) string {
 		}
 	}
 
-	return ""
+	return "NOT FOUND"
 }
 
 func fileNotExist(filePath string) bool {
