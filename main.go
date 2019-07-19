@@ -14,7 +14,8 @@ import (
 )
 
 const cdbPath string = `C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\cdb.exe`
-const version = "0.0.1"
+const cdbCommand string = "!analyze -v;q"
+const version = "v0.0.2"
 
 const ok = 0
 const dmpNotFound = 1
@@ -25,10 +26,12 @@ func main() {
 	var logFolder string
 	var cdb string
 	var dump string
+	var cdbCmd string
 
 	flag.StringVar(&logFolder, "d", "", "log folder contains DMP files")
 	flag.StringVar(&cdb, "p", cdbPath, "cdb file path")
 	flag.StringVar(&dump, "f", "", "analyze specific dump file, ignore -d if flag set")
+	flag.StringVar(&cdbCmd, "c", cdbCommand, "command issued tocdb debugger")
 	ver := flag.Bool("version", false, "print version")
 	flag.Parse()
 
@@ -37,8 +40,8 @@ func main() {
 		os.Exit(ok)
 	}
 
-	if (logFolder == "" && dump == "") || cdb == "" {
-		fmt.Fprintf(os.Stderr, "usage of %s\n", os.Args[0])
+	if (logFolder == "" && dump == "") || cdb == "" || cdbCmd == "" {
+		fmt.Fprintf(os.Stderr, "%s %s \n", filepath.Base(os.Args[0]), version)
 		flag.PrintDefaults()
 		os.Exit(dmpNotFound)
 	}
@@ -50,7 +53,7 @@ func main() {
 
 	//specific dump analyze
 	if FileExist(dump) {
-		bugCheck := getBugCheckStr(cdb, dump)
+		bugCheck := analyze(cdb, dump, cdbCmd)
 		fmt.Printf("%s\n\t%s\n\n", dump, bugCheck)
 		os.Exit(ok)
 	}
@@ -69,7 +72,7 @@ func main() {
 	for _, file := range files {
 		if strings.ToLower(filepath.Ext(file.Name())) == ".dmp" {
 			dmpFile := path.Join(logFolder, file.Name())
-			bugCheck := getBugCheckStr(cdb, dmpFile)
+			bugCheck := analyze(cdb, dmpFile, cdbCmd)
 			fmt.Printf("%s\n\t%s\n\n", dmpFile, bugCheck)
 		}
 	}
@@ -79,8 +82,13 @@ func printVersion() {
 	fmt.Println(version)
 }
 
-func getBugCheckStr(cdb string, dmpFile string) string {
-	output, err := exec.Command(cdb, "-z", dmpFile, `-c`, `!analyze -v;q`).Output()
+func executeCdb(cdb string, dmpFile string, cdbCmd string) ([]byte, error) {
+	output, err := exec.Command(cdb, "-z", dmpFile, "-c", cdbCmd).Output()
+	return output, err
+}
+
+func analyze(cdb string, dmpFile string, cdbCmd string) string {
+	output, err := executeCdb(cdb, dmpFile, cdbCmd)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
