@@ -87,16 +87,13 @@ func analyze(cdb string, dmpFile string, cdbCmd string, regPattern string, rawOu
 	}
 
 	outputStr := string(output)
-
 	if rawOutput {
 		return outputStr
 	}
 
 	scanner := bufio.NewScanner(strings.NewReader(outputStr))
 	for scanner.Scan() {
-
 		line := scanner.Text()
-
 		if regPattern == "" {
 			if strings.Contains(line, "BUGCHECK_STR") {
 				return line
@@ -104,19 +101,15 @@ func analyze(cdb string, dmpFile string, cdbCmd string, regPattern string, rawOu
 		} else {
 			// regex exact
 			matched, err := regexp.MatchString(regPattern, line)
-
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "regex syntax error: %s", err.Error())
 				return "ERROR"
 			}
-
 			if matched {
 				return line
 			}
 		}
-
 	}
-
 	return "NOT FOUND"
 }
 
