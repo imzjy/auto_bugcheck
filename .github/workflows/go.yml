@@ -29,5 +29,5 @@ jobs:
     
     - uses: actions/upload-artifact@master
       with:
-        name: my-artifact
+        name: auto_bugcheck
         path: auto_bugcheck
