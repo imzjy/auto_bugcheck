@@ -33,7 +33,7 @@ func main() {
 	flag.StringVar(&logFolder, "d", "", "folder contains DMP files")
 	flag.StringVar(&cdb, "p", cdbPath, "cdb file path")
 	flag.StringVar(&dump, "f", "", "analyze specific dump file, ignore -d if flag set")
-	flag.StringVar(&cdbCmd, "c", cdbCommand, "command issued tocdb debugger")
+	flag.StringVar(&cdbCmd, "c", cdbCommand, "command issued to cdb debugger")
 	flag.StringVar(&regPattern, "regex", "", "regular express to exact from cdb output")
 	ver := flag.Bool("version", false, "print version")
 	rawOutput := flag.Bool("raw", false, "raw cdb output")
